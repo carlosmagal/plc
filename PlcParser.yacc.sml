@@ -115,18 +115,18 @@ val table=let val actionRows =
 \\023\000\030\000\024\000\029\000\042\000\027\000\000\000\
 \\150\000\000\000\
 \\151\000\042\000\027\000\000\000\
-\\152\000\016\000\037\000\017\000\036\000\018\000\035\000\019\000\034\000\
-\\020\000\033\000\021\000\032\000\022\000\031\000\023\000\030\000\
-\\024\000\029\000\042\000\027\000\000\000\
+\\152\000\018\000\035\000\019\000\034\000\042\000\027\000\000\000\
 \\153\000\042\000\027\000\000\000\
 \\154\000\042\000\027\000\000\000\
 \\155\000\042\000\027\000\000\000\
 \\156\000\042\000\027\000\000\000\
-\\157\000\018\000\035\000\019\000\034\000\042\000\027\000\000\000\
+\\157\000\016\000\037\000\017\000\036\000\018\000\035\000\019\000\034\000\
+\\020\000\033\000\021\000\032\000\022\000\031\000\023\000\030\000\
+\\024\000\029\000\042\000\027\000\000\000\
 \\158\000\018\000\035\000\019\000\034\000\042\000\027\000\000\000\
-\\159\000\042\000\027\000\000\000\
+\\159\000\018\000\035\000\019\000\034\000\042\000\027\000\000\000\
 \\160\000\042\000\027\000\000\000\
-\\161\000\018\000\035\000\019\000\034\000\042\000\027\000\000\000\
+\\161\000\042\000\027\000\000\000\
 \\162\000\016\000\037\000\017\000\036\000\018\000\035\000\019\000\034\000\
 \\022\000\031\000\023\000\030\000\024\000\029\000\042\000\027\000\000\000\
 \\163\000\016\000\037\000\017\000\036\000\018\000\035\000\019\000\034\000\
@@ -194,13 +194,13 @@ val actionRowNumbers =
 \\006\000\029\000\038\000\034\000\
 \\092\000\023\000\030\000\011\000\
 \\028\000\079\000\005\000\098\000\
-\\097\000\096\000\060\000\055\000\
+\\097\000\096\000\051\000\055\000\
 \\054\000\053\000\052\000\050\000\
 \\010\000\008\000\026\000\027\000\
 \\016\000\035\000\066\000\065\000\
 \\064\000\063\000\062\000\061\000\
-\\059\000\058\000\057\000\056\000\
-\\051\000\017\000\029\000\070\000\
+\\060\000\059\000\058\000\057\000\
+\\056\000\017\000\029\000\070\000\
 \\036\000\028\000\071\000\072\000\
 \\006\000\022\000\028\000\031\000\
 \\021\000\002\000\006\000\006\000\
@@ -619,13 +619,12 @@ NOT1left, _)) :: rest671)) => let val  result = MlyValue.Expr (fn _ =>
 end)
  in ( LrTable.NT 2, ( result, NOT1left, Expr1right), rest671)
 end
-|  ( 10, ( ( _, ( MlyValue.Expr Expr2, _, Expr2right)) :: _ :: ( _, ( 
-MlyValue.Expr Expr1, Expr1left, _)) :: rest671)) => let val  result = 
-MlyValue.Expr (fn _ => let val  Expr1 = Expr1 ()
- val  Expr2 = Expr2 ()
- in (Prim2("&&", Expr1, Expr2))
+|  ( 10, ( ( _, ( MlyValue.Expr Expr1, _, Expr1right)) :: ( _, ( _, 
+MINUS1left, _)) :: rest671)) => let val  result = MlyValue.Expr (fn _
+ => let val  (Expr as Expr1) = Expr1 ()
+ in (Prim1("-", Expr))
 end)
- in ( LrTable.NT 2, ( result, Expr1left, Expr2right), rest671)
+ in ( LrTable.NT 2, ( result, MINUS1left, Expr1right), rest671)
 end
 |  ( 11, ( ( _, ( MlyValue.Expr Expr1, _, Expr1right)) :: ( _, ( _, 
 HD1left, _)) :: rest671)) => let val  result = MlyValue.Expr (fn _ =>
@@ -659,7 +658,7 @@ end
 MlyValue.Expr Expr1, Expr1left, _)) :: rest671)) => let val  result = 
 MlyValue.Expr (fn _ => let val  Expr1 = Expr1 ()
  val  Expr2 = Expr2 ()
- in (Prim2("+", Expr1, Expr2))
+ in (Prim2("&&", Expr1, Expr2))
 end)
  in ( LrTable.NT 2, ( result, Expr1left, Expr2right), rest671)
 end
@@ -667,7 +666,7 @@ end
 MlyValue.Expr Expr1, Expr1left, _)) :: rest671)) => let val  result = 
 MlyValue.Expr (fn _ => let val  Expr1 = Expr1 ()
  val  Expr2 = Expr2 ()
- in (Prim2("-", Expr1, Expr2))
+ in (Prim2("+", Expr1, Expr2))
 end)
  in ( LrTable.NT 2, ( result, Expr1left, Expr2right), rest671)
 end
@@ -675,7 +674,7 @@ end
 MlyValue.Expr Expr1, Expr1left, _)) :: rest671)) => let val  result = 
 MlyValue.Expr (fn _ => let val  Expr1 = Expr1 ()
  val  Expr2 = Expr2 ()
- in (Prim2("*", Expr1, Expr2))
+ in (Prim2("-", Expr1, Expr2))
 end)
  in ( LrTable.NT 2, ( result, Expr1left, Expr2right), rest671)
 end
@@ -683,16 +682,17 @@ end
 MlyValue.Expr Expr1, Expr1left, _)) :: rest671)) => let val  result = 
 MlyValue.Expr (fn _ => let val  Expr1 = Expr1 ()
  val  Expr2 = Expr2 ()
- in (Prim2("/", Expr1, Expr2))
+ in (Prim2("*", Expr1, Expr2))
 end)
  in ( LrTable.NT 2, ( result, Expr1left, Expr2right), rest671)
 end
-|  ( 19, ( ( _, ( MlyValue.Expr Expr1, _, Expr1right)) :: ( _, ( _, 
-MINUS1left, _)) :: rest671)) => let val  result = MlyValue.Expr (fn _
- => let val  (Expr as Expr1) = Expr1 ()
- in (Prim1("-", Expr))
+|  ( 19, ( ( _, ( MlyValue.Expr Expr2, _, Expr2right)) :: _ :: ( _, ( 
+MlyValue.Expr Expr1, Expr1left, _)) :: rest671)) => let val  result = 
+MlyValue.Expr (fn _ => let val  Expr1 = Expr1 ()
+ val  Expr2 = Expr2 ()
+ in (Prim2("/", Expr1, Expr2))
 end)
- in ( LrTable.NT 2, ( result, MINUS1left, Expr1right), rest671)
+ in ( LrTable.NT 2, ( result, Expr1left, Expr2right), rest671)
 end
 |  ( 20, ( ( _, ( MlyValue.Expr Expr2, _, Expr2right)) :: _ :: ( _, ( 
 MlyValue.Expr Expr1, Expr1left, _)) :: rest671)) => let val  result = 
