@@ -35,183 +35,196 @@ fun teval (e:expr) (env:plcType env) : plcType =
       in
         if(type1 = funType) then teval expr2 (envFun::env) else raise WrongRetType
       end
-    | Prim1(ope, expr1) =>
+    | Prim1(opr, expr1) =>
       let
-        val type1 = teval expr1 env
+        val t1 = teval expr1 env
       in
-        case ope of
-          ("!") => if(type1 = BoolT) then BoolT else raise UnknownType
-        | ("-") => if(type1 = IntT) then IntT else raise UnknownType
-        | ("hd") => 
-          let in
-            case expr1 of
-              ESeq(SeqT(t)) => raise EmptySeq
-            | _ => 
-              let in
-                case type1 of
-                  SeqT(t) => t
-                | _ => raise UnknownType
-              end
-          end
-        | ("tl") => 
-          let in
-            case expr1 of
-              ESeq(SeqT(t)) => raise EmptySeq
-            | _ => 
-              let in
-                case type1 of
-                  SeqT(t) => SeqT(t)
-                | _ => raise UnknownType
-              end
-          end
-        | ("ise") => 
-          let in
-            case type1 of
-              SeqT(t) => BoolT
-            | _ => raise UnknownType
-          end
-        | ("print") => ListT([])
-        | _ => raise UnknownType
-      end
-    | Prim2(operator, expr1, expr2) =>
-      let
-        val type1 = teval expr1 env
-        val type2 = teval expr2 env
-      in
-        case operator of
-           ("*") => if (type1 = type2 andalso type1 = IntT) then IntT else raise UnknownType
-          | ("/") => if (type1 = type2 andalso type1 = IntT) then IntT else raise UnknownType
-          | ("+") => if (type1 = type2 andalso type1 = IntT) then IntT else raise UnknownType
-          | ("-") => if (type1 = type2 andalso type1 = IntT) then IntT else raise UnknownType
-          | (";") => type2
-          | ("&&") => if (type1 = type2) then BoolT else raise UnknownType
-          | ("::") => if (type2 = SeqT(type1)) then SeqT(type1) else raise UnknownType
-          | ("<") => if (type1 = type2 andalso type1 = IntT) then BoolT else raise UnknownType
-          | ("<=") => if (type1 = type2 andalso type1 = IntT) then BoolT else raise UnknownType
-          | ("=") => if (type1 <> type2) then raise NotEqTypes else
+        case (opr, t1) of
+            ("print", _) => ListT []
+          | ("hd", _) => 
             let in
-              case type1 of
-                BoolT => BoolT
-              | IntT => BoolT
-              | ListT([]) => BoolT
-              | SeqT(seqType) =>
+              case expr1 of
+                ESeq(SeqT(t)) => raise EmptySeq
+              | _ => 
+                let in
+                  case t1 of
+                    SeqT(t) => t
+                  | _ => raise UnknownType
+                end
+            end
+          | ("tl",_) => 
+            let in
+              case expr1 of
+                ESeq(SeqT(t)) => raise EmptySeq
+              | _ => 
+                let in
+                  case t1 of
+                    SeqT(t) => SeqT(t)
+                  | _ => raise UnknownType
+                end
+            end
+          | ("-", IntT) => IntT
+          | ("!", BoolT) => BoolT
+          | ("ise",_) => 
+            let in
+              case t1 of
+                SeqT(t) => BoolT
+              | _ => raise UnknownType
+            end
+          | _ => raise UnknownType
+      end
+    | Prim2(opr, e1, e2) =>
+      let
+        val t1 = teval e1 env
+        val t2 = teval e2 env
+      in
+        case (opr, t1, t2) of
+           ("*", IntT, IntT) => IntT
+          | ("/", IntT, IntT) => IntT
+          | ("+", IntT, IntT) => IntT
+          | ("-", IntT, IntT) => IntT
+          | (";", _, _) => t2
+          | ("&&", _, _) => if (t1 = t2) then BoolT else raise UnknownType
+          | ("::", _, _) => if (t2 = SeqT(t1)) then SeqT(t1) else raise UnknownType
+          | ("<", IntT, IntT) => BoolT
+          | ("<=", IntT, IntT) => BoolT
+          | ("=", _, _) => 
+            if (t1 <> t2) then 
+              raise NotEqTypes 
+            else
+              let in
+                case t1 of
+                  BoolT => BoolT
+                | IntT => BoolT
+                | ListT([]) => BoolT
+                | SeqT(seqType) =>
+                    let in
+                      case seqType of
+                          BoolT => BoolT
+                        | IntT => BoolT
+                        | ListT([]) => BoolT
+                        | _ => raise NotEqTypes
+                    end
+                | ListT(tlist) => 
+                  let
+                    val list = map(fn(t) => 
+                        case t of
+                            BoolT => BoolT
+                          | IntT => IntT
+                          | ListT([]) => ListT([])
+                          | _ => raise NotEqTypes
+                      ) 
+                      tlist
+                  in
+                    BoolT
+                  end
+                | _ => raise UnknownType
+              end
+          | ("!=", _, _) => 
+            if(t1 <> t2) then 
+              raise NotEqTypes 
+            else
+              let in
+                case t1 of
+                  BoolT => BoolT
+                | IntT => BoolT
+                | ListT([]) => BoolT
+                | SeqT(seqType) =>
                   let in
                     case seqType of
-                      BoolT => BoolT
-                    | IntT => BoolT
-                    | ListT([]) => BoolT
-                    | _ => raise NotEqTypes
+                        BoolT => BoolT
+                      | IntT => BoolT
+                      | ListT([]) => BoolT
+                      | _ => raise NotEqTypes
                   end
-              | ListT(typeList) => 
-                let
-                  val list = map(fn(t) => 
-                      case t of
-                        BoolT => BoolT
-                      | IntT => IntT
-                      | ListT([]) => ListT([])
-                      | _ => raise NotEqTypes) 
-                    typeList
-                in
-                  BoolT
-                end
-              | _ => raise UnknownType
-            end
-          | ("!=") => if(type1 <> type2) then raise NotEqTypes else
-            let in
-              case type1 of
-                BoolT => BoolT
-              | IntT => BoolT
-              | ListT([]) => BoolT
-              | SeqT(seqType) =>
-                let in
-                  case seqType of
-                    BoolT => BoolT
-                  | IntT => BoolT
-                  | ListT([]) => BoolT
-                  | _ => raise NotEqTypes
-                end
-              | ListT(typeList) => 
-                let
-                  val list = map(fn(t) => 
-                      case t of
-                        BoolT => BoolT
-                      | IntT => IntT
-                      | ListT([]) => ListT([])
-                      | _ => raise NotEqTypes) 
-                    typeList
-                in
-                  BoolT
-                end
-              | _ => raise UnknownType
-            end
-        | _ => raise UnknownType
+                | ListT(tlist) => 
+                  let
+                    val list = map(fn(t) => 
+                        case t of
+                            BoolT => BoolT
+                          | IntT => IntT
+                          | ListT([]) => ListT([])
+                          | _ => raise NotEqTypes) 
+                      tlist
+                  in
+                    BoolT
+                  end
+                | _ => raise UnknownType
+              end
+          | _ => raise UnknownType
       end
-    | If(expr1, expr2, expr3) =>
+    | If(e1, e2, e3) =>
       let
-        val type1 = teval expr1 env
-        val type2 = teval expr2 env
-        val type3 = teval expr3 env
+        val t1 = teval e1 env
+        val t2 = teval e2 env
+        val t3 = teval e3 env
       in
-        if(type1 <> BoolT) then 
+        if(t1 <> BoolT) then 
           raise IfCondNotBool 
         else 
-          if(type2 <> type3) then 
+          if(t2 <> t3) then 
             raise DiffBrTypes 
           else 
-            type3
+            t3
       end
-    | Match (expr, matchExpr) => 
+    | Match (e1, matchExpr) => 
       if(matchExpr = []) then 
         raise NoMatchResults 
       else 
         let
-          val exprType = teval expr env
-          val equalCondResultTypes = fn (condExpr, resultExpr) => ( 
-            case condExpr of
-              NONE => teval resultExpr env
-            | SOME(e) => 
-              let
-                val condType = teval e env
-              in
-                if (condType = exprType) then teval resultExpr env else raise MatchCondTypesDiff
-              end
-          )
-          val resultTypesList = map equalCondResultTypes matchExpr
-          val resultType1 = hd(resultTypesList)
-          val equalType = fn (item) => if(item = resultType1) then true else raise MatchResTypeDiff
-          val filteredList = List.filter equalType resultTypesList
+          val etype = teval e1 env
+          val tlist = map (
+            fn (cond, resul) => ( 
+              case cond of
+                  NONE => teval resul env
+                | SOME e => 
+                  let
+                    val condtype = teval e env
+                  in
+                    if (condtype = etype) then 
+                      teval resul env 
+                    else 
+                      raise MatchCondTypesDiff
+                  end
+            )) matchExpr
         in
-          resultType1
+          hd tlist
         end
-    | Call(expr1, expr2) =>
+    | Call(e1, e2) =>
       let
-        val type1 = teval expr1 env
-        val type2 = teval expr2 env
+        val t1 = teval e1 env
+        val t2 = teval e2 env
       in
-        case type1 of
+        case t1 of
           FunT(argsType, returnType) => 
-            if(type2 = argsType) then returnType else raise CallTypeMisM
+            if(t2 = argsType) then 
+              returnType 
+            else 
+              raise CallTypeMisM
           | _ => raise NotFunc
       end
     | List [] => ListT []
     | List l => ListT(map (fn (item) => teval item env) l)
-    | Item(i, expr1) => 
+    | Item(i, e1) => 
       let
-        val type1 = teval expr1 env
+        val t1 = teval e1 env
       in
-        case type1 of
-          ListT(typeList) => 
+        case t1 of
+          ListT tlist => 
             let
-              val listSize = length(typeList)
+              val lsize = length(tlist)
             in
-              if(i > 0 andalso i <= listSize) then List.nth(typeList, (i-1)) else raise ListOutOfRange
+              if(i > 0 andalso i <= lsize) then 
+                List.nth(tlist, (i-1)) 
+              else 
+                raise ListOutOfRange
             end
         | _ => raise OpNonList
       end
-    | Anon(argsType, argsName, expr1) =>
+    | Anon(argsType, argsName, e1) =>
       let
-        val type1 = teval expr1 ((argsName, argsType)::env)
+        val t1 = teval e1 ((argsName, argsType)::env)
       in
-        FunT(argsType, type1)
+        FunT(argsType, t1)
       end
     | _ => raise UnknownType

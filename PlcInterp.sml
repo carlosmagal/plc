@@ -19,140 +19,60 @@ fun eval (e:expr) (env:plcVal env) : plcVal =
 				in
 					eval e2 env2
 				end
-		| Letrec(funName, argType, arg, funType, expr1, expr2) =>
-      	let 
-        	val closureEnv = (funName, Clos(funName, arg, expr1, env))::env
-      	in
-        	eval expr2 closureEnv
-      	end
-		| Prim1(ope, expr1) =>
+		| Letrec(funName, argType, arg, funType, e1, e2) => eval e2 ((funName, Clos(funName, arg, e1, env))::env)
+		| Prim1(opr, e1) =>
         let
-          val val1 = eval expr1 env
+          val v1 = eval e1 env
         in
-          case ope of
-            ("!") => 
-              let in
-                case val1 of
-                  BoolV(b) => BoolV(not(b))
-                | _ => raise Impossible
-              end
-          | ("-") => 
-              let in
-                case val1 of
-                  IntV(n) => IntV(~n)
-                | _ => raise Impossible
-              end
-          | ("hd") => 
-              let in
-                case val1 of
-                  SeqV(s) => if (s = []) then raise HDEmptySeq else hd(s)
-                | _ => raise Impossible
-              end
-          | ("tl") => 
-              let in
-                case val1 of
-                  SeqV(s) => if (s = []) then raise TLEmptySeq else SeqV(tl(s))
-                | _ => raise Impossible
-              end
-          | ("ise") => 
-              let in
-                case val1 of
-                  SeqV(s) => BoolV(s = [])
-                | _ => raise Impossible
-              end
-          | ("print") => 
-              let
-                val env = print(val2string(val1)^"\n")
-              in
-                ListV([])
-              end
-          | _ => raise Impossible
+          case (opr, v1) of
+            	("-", IntV i) => IntV(~i)
+						| ("print", _) => 
+							let
+								val s = val2string v1
+							in
+								print(s^"\n"); ListV []
+							end
+						| ("!", BoolV(b)) => BoolV(not(b))
+						| ("hd", SeqV(s)) => if (s = []) then raise HDEmptySeq else hd(s)
+						| ("tl", SeqV(s)) => if (s = []) then raise TLEmptySeq else SeqV(tl(s))
+						| ("ise", SeqV(s)) => BoolV(s = [])
+						| _ => raise Impossible
         end
-    | Prim2(ope, expr1, expr2) =>
+    | Prim2(opr, e1, e2) =>
         let
-          val val1 = eval expr1 env
-          val val2 = eval expr2 env
+          val v1 = eval e1 env
+          val v2 = eval e2 env
         in
-          case ope of 
-              ("&&") => 
-                let in
-                  case (val1, val2) of
-                    (BoolV(b1), BoolV(b2)) => BoolV(b1 andalso b2)
-                  | _ => raise Impossible
-                end
-            | ("::") => 
-                let in
-                  case (val1, val2) of
-                    (BoolV(b), SeqV(s)) => SeqV(BoolV(b)::s)
-                  | (IntV(n), SeqV(s)) => SeqV(IntV(n)::s)
-                  | (ListV(l), SeqV(s)) => SeqV(ListV(l)::s)
-                  | (SeqV(s1), SeqV(s2)) => SeqV(SeqV(s1)::s2)
-                  | (Clos(c), SeqV(s)) => SeqV(Clos(c)::s)
-                  | _ => raise Impossible
-                end
-            | ("+") => 
-                let in
-                  case (val1, val2) of
-                    (IntV(n1), IntV(n2)) => IntV(n1 + n2)
-                  | _ => raise Impossible
-                end
-            | ("*") => 
-                let in
-                  case (val1, val2) of
-                    (IntV(n1), IntV(n2)) => IntV(n1 * n2)
-                  | _ => raise Impossible
-                end
-            | ("-") => 
-                let in
-                  case (val1, val2) of
-                    (IntV(n1), IntV(n2)) => IntV(n1 - n2)
-                  | _ => raise Impossible
-                end
-            | ("/") => 
-                let in
-                  case (val1, val2) of
-                    (IntV(n1), IntV(n2)) => IntV(n1 div n2)
-                  | _ => raise Impossible
-                end
-            | ("<") => 
-                let in
-                  case (val1, val2) of
-                    (IntV(n1), IntV(n2)) => BoolV(n1 < n2)
-                  | _ => raise Impossible
-                end
-            | ("<=") => 
-                let in
-                  case (val1, val2) of
-                    (IntV(n1), IntV(n2)) => BoolV(n1 <= n2)
-                  | _ => raise Impossible
-                end
-            | ("=") => 
-                let in
-                  case (val1, val2) of
-                    (IntV(n1), IntV(n2)) => BoolV(n1 = n2)
-                  | (BoolV(b1), BoolV(b2)) => BoolV(b1 = b2)
-                  | (ListV(l1), ListV(l2)) => BoolV(l1 = l2)
-                  | (SeqV(s1), SeqV(s2)) => BoolV(s1 = s2)
-                  | _ => raise Impossible
-                end
-            | ("!=") => 
-                let in
-                  case (val1, val2) of
-                    (IntV(n1), IntV(n2)) => BoolV(n1 <> n2)
-                  | (BoolV(b1), BoolV(b2)) => BoolV(b1 <> b2)
-                  | (ListV(l1), ListV(l2)) => BoolV(l1 <> l2)
-                  | (SeqV(s1), SeqV(s2)) => BoolV(s1 <> s2)
-                  | _ => raise Impossible
-                end
-            | (";") => val2
-          | _ => raise Impossible
+          case (opr, v1, v2) of 
+							("*", IntV i1, IntV i2) => IntV (i1 * i2)
+            | ("/", IntV i1, IntV i2) => IntV (i1 div i2)
+            | ("+", IntV i1, IntV i2) => IntV (i1 + i2)
+            | ("-", IntV i1, IntV i2) => IntV (i1 - i2)
+            | (";", _, _) => v2
+            | ("&&", BoolV b1, BoolV b2) => BoolV (b1 andalso b2)
+            | ("::", BoolV b, SeqV s) => SeqV(BoolV(b)::s)
+            | ("::", IntV n, SeqV s) => SeqV(IntV(n)::s)
+            | ("::", ListV l, SeqV s) => SeqV(ListV(l)::s)
+            | ("::", SeqV(s1), SeqV(s2)) => SeqV(SeqV(s1)::s2)
+            | ("::", Clos c, SeqV s) => SeqV(Clos(c)::s)
+            | ("<", IntV i1, IntV i2) => BoolV(i1 < i2)
+            | ("<=", IntV i1, IntV i2) => BoolV(i1 <= i2)
+            | ("=", IntV i1, IntV i2) => BoolV(i1 = i2)
+            | ("=", BoolV b1, BoolV b2) => BoolV(b1 = b2)
+            | ("=", ListV l1, ListV l2) => BoolV(l1 = l2)
+            | ("=", SeqV s1, SeqV s2) => BoolV(s1 = s2)
+            | ("!=", IntV i1, IntV i2) => BoolV(i1 <> i2)
+            | ("!=", BoolV b1, BoolV b2) => BoolV(b1 <> b2)
+            | ("!=", ListV l1, ListV l2) => BoolV(l1 <> l2)
+            | ("!=", SeqV s1, SeqV s2) => BoolV(s1 <> s2)
+						| _ => raise Impossible
         end
-		| If(expr1, expr2, expr3) =>
+		| If(e1, e2, e3) =>
 				let
-					val condition = eval expr1 env
+					val condition = eval e1 env
 				in
 					case condition of
-						 BoolV b => if b then eval expr2 env else eval expr3 env
+						 BoolV b => if b then eval e2 env else eval e3 env
 						| _ => raise Impossible
 				end
 		| Match (expr, mtchExpr) =>
@@ -160,38 +80,33 @@ fun eval (e:expr) (env:plcVal env) : plcVal =
 						raise Impossible 
 				else 
 						let
-							val exprVal = eval expr env
-							val matchCondition = 
-									fn (condExpr, resultExpr) => ( 
-										case condExpr of
+							val evalue = eval expr env
+							val matchCond = 
+									fn (cond, resul) => ( 
+										case cond of
 											 NONE => true
-											| SOME(e) => 
-												let
-													val cond = eval e env
-												in
-													(cond = exprVal)
-												end
+											| SOME(e) => ((eval e env) = evalue)
 									)
-							val filterList = List.filter matchCondition mtchExpr
+							val filterList = List.filter matchCond mtchExpr
 						in
 							if (filterList = []) then 
 									raise ValueNotFoundInMatch 
 							else 
 									let 
-										val matchedExpr = hd filterList
-										val resultExpr = (#2 matchedExpr)
+										val matchexpr = hd filterList
+										val resulE = (#2 matchexpr)
 									in
-										eval resultExpr env
+										eval resulE env
 									end
 						end
-		| Call(expr1, expr2) =>
+		| Call(e1, e2) =>
 				let
-					val f = eval expr1 env
+					val f = eval e1 env
 				in
 					case f of
 							Clos(funName, arg, funExpr, envC) => 
 								let
-									val ev = eval expr2 env
+									val ev = eval e2 env
 									val funEnv = (funName, f)::(arg, ev)::envC
 								in
 									eval funExpr funEnv
@@ -200,7 +115,7 @@ fun eval (e:expr) (env:plcVal env) : plcVal =
 				end
 		| List [] => ListV []
 		| List l => 
-				if (length l) > 1 then
+				if ((length l) > 1) then
 					ListV (map (fn (x) => eval x env) l)
 				else
 					raise Impossible
@@ -212,5 +127,5 @@ fun eval (e:expr) (env:plcVal env) : plcVal =
 							 ListV l => List.nth (l, i-1)
 							| _ => raise Impossible
 				end
-		| Anon(argType, arg, expr1) => Clos("", arg, expr1, env)
+		| Anon(argType, arg, e1) => Clos("", arg, e1, env)
 		| _ => raise Impossible
